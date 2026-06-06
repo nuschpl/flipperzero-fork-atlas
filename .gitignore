@@ -1,0 +1,7 @@
+# Firmware sources are tracked as git submodules (see .gitmodules), pinned to the
+# exact commits this analysis was built against. They are NOT vendored into history —
+# the superproject only stores submodule pointers. Run `git submodule update --init`
+# to fetch them.
+
+.DS_Store
+*.log

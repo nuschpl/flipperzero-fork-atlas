@@ -1,0 +1,12 @@
+[submodule "src/official-firmware"]
+	path = src/official-firmware
+	url = https://github.com/flipperdevices/flipperzero-firmware.git
+[submodule "src/unleashed-firmware"]
+	path = src/unleashed-firmware
+	url = https://github.com/DarkFlippers/unleashed-firmware.git
+[submodule "src/roguemaster-firmware"]
+	path = src/roguemaster-firmware
+	url = https://github.com/RogueMaster/flipperzero-firmware-wPlugins.git
+[submodule "src/momentum-firmware"]
+	path = src/momentum-firmware
+	url = https://github.com/Next-Flip/Momentum-Firmware.git
