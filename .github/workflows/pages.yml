@@ -1,0 +1,42 @@
+name: Deploy site to GitHub Pages
+
+# Publishes the static atlas (index.html + data/ + docs) at the repo root.
+# Submodules under src/ are NOT checked out — the multi-GB firmware trees would
+# blow past the Pages 1 GB / 10-min build limits and aren't part of the site.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (no submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Prune non-site files from the artifact
+        run: rm -rf .git .github .claude src   # don't publish history, workflows, tooling, or empty submodule dirs
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
