@@ -59,7 +59,7 @@
 | OTA region-provisioning service `region.c` | capability | Service that provisions the region profile over-the-air at activation. | ✓ | ✗ | ✗ | ✓ | U & R **delete** the region service; **Momentum keeps it** — the one fork retaining OTA region provisioning. |
 | Unlock asset (SD, default OFF) | capability | SD-card file the user must add to enable the extended/dangerous range. | ✗ | dangerous_settings | extend_range | extend_range | All ship OFF; opt-in via SD card. U uses `dangerous_settings`; R/M use `extend_range.txt` (M generates it at runtime). |
 | RX protocol-filter bypass `ignore_filter` | capability | Receives and decodes protocols that are otherwise blocked or disabled. | ✗ | ✓ | ✓ | ✓ | RX-only `ignore_filter` added in all three forks; absent upstream. |
-| External CC1101 extended range | capability | Extended-range logic mirrored for an external CC1101 radio module. | ~ | ✓ | ✓ | ✓ | Forks mirror the extended-range logic for the external radio path. |
+| External CC1101 extended range | capability | Extended-range logic mirrored for an external CC1101 radio module. | ~ | ✓ | ✓ | ✓ | Forks mirror the extended-range logic for the external radio path: `cc1101_ext.c:504` (`subghz_device_cc1101_ext_is_frequency_valid`) widens the allowed bands for the external module, matching the internal HAL change in `furi_hal_subghz.c`. |
 
 ### 1.4 SubGhz tooling
 

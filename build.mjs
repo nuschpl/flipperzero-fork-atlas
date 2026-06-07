@@ -87,11 +87,36 @@ const tree = domainsSorted.map((cat) => ({
   groups: [...byDomain.get(cat)].map(([name, items]) => ({ name, items })),
 }));
 
+/* ---------- source-link metadata: per-fork repo slug+SHA, and commit→repo resolution ---------- */
+const REPO_SLUG = {
+  O: 'flipperdevices/flipperzero-firmware', U: 'DarkFlippers/unleashed-firmware',
+  R: 'RogueMaster/flipperzero-firmware-wPlugins', M: 'Next-Flip/Momentum-Firmware',
+};
+const REPO_DIR = { O: 'official-firmware', U: 'unleashed-firmware', R: 'roguemaster-firmware', M: 'momentum-firmware' };
+const PIN = { O: 'c9ab2b6827fc4d646e98ad0fc15a264240b58986', U: '318bfc3b000173029eb391758eea7dfa03006acb', R: 'ed963fd0d243a3d81340bfe1d19e5b4ed8163a63', M: '8ed809fba8af7ac3f09b9495a597d8963f9178a8' };
+const repoMeta = {};
+for (const k of Object.keys(REPO_SLUG)) {
+  const r = spawnSync('git', ['-C', path.join(HERE, 'src', REPO_DIR[k]), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+  repoMeta[k] = { slug: REPO_SLUG[k], sha: (r.status === 0 && r.stdout.trim()) || PIN[k] };
+}
+// resolve every commit-hash-looking token in the data to the repo that actually contains it
+const scanText = JSON.stringify(features.tree) + JSON.stringify(structure);
+const candidates = [...new Set(scanText.match(/\b[0-9a-f]{7,40}\b/g) || [])]; // 7+ hex; git cat-file filters non-commits
+const commitRepos = {};
+for (const h of candidates) {
+  for (const k of Object.keys(REPO_DIR)) {
+    const t = spawnSync('git', ['-C', path.join(HERE, 'src', REPO_DIR[k]), 'cat-file', '-t', h], { encoding: 'utf8' });
+    if (t.status === 0 && t.stdout.trim() === 'commit') { commitRepos[h] = k; break; }
+  }
+}
+console.log(`• source links: ${Object.keys(commitRepos).length}/${candidates.length} hash tokens resolved to a repo`);
+
 const out = {
   meta: features.meta,
   forks: features.forks,
   lineage: features.lineage,
   taxonomy: structure.taxonomy,
+  repoMeta, commitRepos,
   nodes, edges, tree,
 };
 

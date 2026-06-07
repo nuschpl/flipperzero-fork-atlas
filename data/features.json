@@ -778,7 +778,8 @@
                 "R": "yes",
                 "M": "yes"
               },
-              "prov": "Forks mirror the extended-range logic for the external radio path."
+              "prov": "Forks mirror the extended-range logic for the external radio path: `cc1101_ext.c:504` (`subghz_device_cc1101_ext_is_frequency_valid`) widens the allowed bands for the external module, matching the internal HAL change in `furi_hal_subghz.c`.",
+              "evi": [["ext driver", "`cc1101_ext.c:504`"], ["internal HAL", "`furi_hal_subghz.c`"]]
             }
           ]
         },

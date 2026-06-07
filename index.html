@@ -208,6 +208,12 @@ main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2
 .ego .center rect{fill:var(--panel2)}
 .ego .center text{font-family:var(--cond);font-weight:700;font-size:12px}
 .egonote{font-family:var(--mono);font-size:10px;color:var(--faint);text-align:center;margin-top:4px}
+/* code → GitHub source links */
+a.codelink{text-decoration:none}
+a.codelink code{cursor:pointer;border-style:solid;border-color:rgba(84,214,232,.45);transition:.14s}
+a.codelink::after{content:"↗";font-size:.62em;color:var(--O);margin-left:1px;vertical-align:super;opacity:.55}
+a.codelink:hover code{color:#bfeaf2;border-color:var(--O);background:rgba(84,214,232,.16)}
+a.codelink:hover::after{opacity:1}
 
 .verdict{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--r);margin-bottom:24px;
   border:1px solid var(--line2);background:var(--panel);font-size:13.5px}
@@ -451,6 +457,39 @@ const RELT=Object.fromEntries(((FEATURES.taxonomy||{}).relTypes||[]).map(r=>[r.i
 const NTYPE=Object.fromEntries(((FEATURES.taxonomy||{}).nodeTypes||[]).map(t=>[t.id,t]));
 const tcolor=id=>{const n=NBY[id];return (n&&NTYPE[n.type]&&NTYPE[n.type].color)||'var(--mut)';};
 const tlabel=t=>(NTYPE[t]&&NTYPE[t].label)||t;
+/* ---- source links: turn code citations (file:line, commit hashes) into GitHub permalinks ---- */
+const REPOS=FEATURES.repoMeta||{U:{slug:'DarkFlippers/unleashed-firmware',sha:'318bfc3b000173029eb391758eea7dfa03006acb'}};
+const COMMIT_REPOS=FEATURES.commitRepos||{};
+const FILEMAP={
+ 'bad_usb_hid.c':['applications/main/bad_usb/helpers/bad_usb_hid.c','U'],'bt.c':['applications/services/bt/bt_service/bt.c','U'],
+ 'crypto1.c':['lib/nfc/helpers/crypto1.c','U'],'custom_btn.c':['lib/subghz/blocks/custom_btn.c','U'],'faac_slh.c':['lib/subghz/protocols/faac_slh.c','U'],
+ 'furi_hal_crypto.c':['targets/f7/furi_hal/furi_hal_crypto.c','U'],'furi_hal_region.c':['targets/f7/furi_hal/furi_hal_region.c','U'],'furi_hal_region':['targets/f7/furi_hal/furi_hal_region.c','U'],
+ 'furi_hal_subghz.c':['targets/f7/furi_hal/furi_hal_subghz.c','U'],'keeloq.c':['lib/subghz/protocols/keeloq.c','U'],'keeloq_common.c':['lib/subghz/protocols/keeloq_common.c','U'],'keeloq_common.h':['lib/subghz/protocols/keeloq_common.h','U'],
+ 'jarolift.c':['lib/subghz/protocols/jarolift.c','U'],'mf_ultralight_listener.c':['lib/nfc/protocols/mf_ultralight/mf_ultralight_listener.c','U'],'mfkey.c':['applications/system/mfkey/mfkey.c','U'],'mfkey32_logger.c':['applications/main/nfc/helpers/mfkey32_logger.c','U'],
+ 'princeton.c':['lib/subghz/protocols/princeton.c','U'],'smartrider.c':['applications/main/nfc/plugins/supported_cards/smartrider.c','U'],'subghz_history.c':['applications/main/subghz/subghz_history.c','U'],'subghz_keystore.c':['lib/subghz/subghz_keystore.c','U'],
+ 'subghz_scene_frequency_analyzer.c':['applications/main/subghz/scenes/subghz_scene_frequency_analyzer.c','U'],'subghz_scene_radio_settings.c':['applications/main/subghz/scenes/subghz_scene_radio_settings.c','U'],'ventra.c':['applications/main/nfc/plugins/supported_cards/ventra.c','U'],
+ 'bin_raw.c':['lib/subghz/protocols/bin_raw.c','U'],'rpc.c':['applications/services/rpc/rpc.c','U'],'region.c':['applications/services/region/region.c','O'],'cc1101_ext.c':['applications/drivers/subghz/cc1101_ext/cc1101_ext.c','U'],
+ 'gen4_poller.c':['applications/external/nfc_magic/magic/protocols/gen4/gen4_poller.c','R'],'subghz_gps.c':['applications/main/subghz/helpers/subghz_gps.c','R'],'subghz_gps':['applications/main/subghz/helpers/subghz_gps.c','R'],'cc1101_configs.c':['lib/subghz/devices/cc1101_configs.c','M'],
+ 'keeloq_mfcodes':['applications/main/subghz/resources/subghz/assets/keeloq_mfcodes','U'],'mf_classic_dict.nfc':['applications/main/nfc/resources/nfc/assets/mf_classic_dict.nfc','U'],'mf_ultralight_c_dict.nfc':['applications/main/nfc/resources/nfc/assets/mf_ultralight_c_dict.nfc','U'],
+};
+function ghBlob(fork,p,l1,l2){const m=REPOS[fork]||REPOS.U;let u=`https://github.com/${m.slug}/blob/${m.sha}/${p}`;if(l1)u+=`#L${l1}`+(l2?`-L${l2}`:'');return u;}
+function resolveRef(tok){
+ tok=tok.trim();
+ if(/^[0-9a-f]{7,40}$/i.test(tok)&&COMMIT_REPOS[tok]){const m=REPOS[COMMIT_REPOS[tok]];return `https://github.com/${m.slug}/commit/${tok}`;}
+ const fm=tok.match(/^([\w./-]+\.(?:c|h|nfc|fam|fal|md|py))(?::(\d+)(?:-(\d+))?)?/);
+ if(fm){const p=fm[1];
+  if(p.includes('/')&&/^(lib|applications|targets|furi|assets|scripts|api_symbols)\//.test(p)) return ghBlob('U',p,fm[2],fm[3]); // full repo-relative path
+  const fe=FILEMAP[p.split('/').pop()]; return fe?ghBlob(fe[1],fe[0],fm[2],fm[3]):null; }                                       // bare or partial → basename map
+ if(FILEMAP[tok])return ghBlob(FILEMAP[tok][1],FILEMAP[tok][0]);
+ return null;
+}
+/* wrap <code> citations in links, but never inside an existing <a> */
+function linkifyCode(html){
+ const stash=[];
+ html=html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,m=>{stash.push(m);return `@@LK${stash.length-1}@@`;});
+ html=html.replace(/<code>([^<]+)<\/code>/g,(full,inner)=>{const u=resolveRef(inner.replace(/&amp;/g,'&'));return u?`<a class="codelink" href="${u}" target="_blank" rel="noopener" title="view source on GitHub">${full}</a>`:full;});
+ return html.replace(/@@LK(\d+)@@/g,(_,i)=>stash[+i]);
+}
 function relationsHTML(id){
  const out=EDGES.filter(e=>e.from===id), inc=EDGES.filter(e=>e.to===id);
  if(!out.length&&!inc.length) return '';
@@ -696,6 +735,7 @@ function renderDetail(it){
    ${evi}
    <div class="foot">Sources · <b>FEATURE-TREE.md</b> · <b>PROVENANCE.md</b> · <b>sections/*.md</b> &nbsp;|&nbsp; static analysis only · code is ground truth · commit hashes &amp; file:line verifiable in-repo</div>
  </div>`;
+ main.innerHTML=linkifyCode(main.innerHTML);
  main.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
  main.scrollTop=0;
 }
@@ -787,7 +827,7 @@ async function openDoc(path){
  try{
   const r=await fetch(path,{cache:"no-store"});if(!r.ok)throw 0;
   const txt=await r.text();
-  dm.innerHTML='<div class="md">'+md2html(txt)+'</div>';dm.scrollTop=0;
+  dm.innerHTML='<div class="md">'+linkifyCode(md2html(txt))+'</div>';dm.scrollTop=0;
  }catch(e){
   dm.innerHTML='<div class="md"><div class="dnote">Couldn\'t load <code>'+path+'</code>.<br><br>'+
    (location.protocol==="file:"
@@ -851,6 +891,7 @@ function showFork(k){
    <div class="sect"><h3 class="sect-h">Exclusive to ${f.name} <span class="muted">(${uniq.length})</span></h3><div class="relchips">${uniqChips}</div></div>
    <div class="foot">Click any chip to open that node · firmware facts from analysis recon · ${f.repo||''}</div>
  </div>`;
+ main.innerHTML=linkifyCode(main.innerHTML);
  main.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
  main.scrollTop=0;
 }
