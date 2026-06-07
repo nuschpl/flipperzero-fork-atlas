@@ -111,12 +111,46 @@ for (const h of candidates) {
 }
 console.log(`• source links: ${Object.keys(commitRepos).length}/${candidates.length} hash tokens resolved to a repo`);
 
+// build a basename→paths index per repo from the actual trees (ground truth, no hand-maintained map)
+const fileIdx = {};
+for (const k of Object.keys(REPO_DIR)) {
+  const r = spawnSync('git', ['-C', path.join(HERE, 'src', REPO_DIR[k]), 'ls-files'], { encoding: 'utf8', maxBuffer: 1 << 29 });
+  const map = new Map();
+  if (r.status === 0) for (const line of r.stdout.split('\n')) {
+    if (!line) continue; const base = line.split('/').pop();
+    if (!map.has(base)) map.set(base, []); map.get(base).push(line);
+  }
+  fileIdx[k] = map;
+}
+const PREF = ['U', 'M', 'R', 'O']; // prefer the fork our line numbers were derived from, then where the file exists
+function resolveFile(tok) {
+  const names = /\.[a-z0-9]+$/i.test(tok) ? [tok] : [tok + '.c', tok + '.h', tok]; // extensionless badge → try .c/.h
+  for (const pass of ['hint', 'base']) for (const nm of names) {
+    const base = nm.split('/').pop(); const hint = nm.includes('/') ? nm : null;
+    for (const repo of PREF) {
+      const paths = fileIdx[repo].get(base); if (!paths) continue;
+      if (pass === 'hint') { if (!hint) continue; const hit = paths.find(p => p === nm || p.endsWith('/' + nm)); if (hit) return { repo, path: hit }; }
+      else { const p = paths.slice().sort((a, b) => a.length - b.length)[0]; return { repo, path: p }; }
+    }
+  }
+  return null;
+}
+// collect every cited file token (incl. extensionless file badges) and resolve it
+const fileTokens = new Set();
+let fm; const reFile = /([\w./-]+\.(?:c|h|nfc))/g;
+while ((fm = reFile.exec(scanText))) fileTokens.add(fm[1]);
+for (const n of nodes) if (n.file && /^[A-Za-z0-9_.-]+$/.test(n.file) && !/\s/.test(n.file)) fileTokens.add(n.file);
+const fileMap = {};
+let resolved = 0;
+for (const t of fileTokens) { const r = resolveFile(t); if (r) { fileMap[t] = r; resolved++; } }
+console.log(`• source links: ${resolved}/${fileTokens.size} file tokens resolved to a repo`);
+
 const out = {
   meta: features.meta,
   forks: features.forks,
   lineage: features.lineage,
   taxonomy: structure.taxonomy,
-  repoMeta, commitRepos,
+  repoMeta, commitRepos, fileMap,
   nodes, edges, tree,
 };
 
