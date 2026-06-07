@@ -7,25 +7,39 @@ The firmware sources under `src/` are **git submodules** (see `.gitmodules`), pi
 to the exact commits this analysis was built against. They are not vendored into the
 repo and are not part of the published site.
 
-## Publish (classic Pages, deploy from a branch)
+## Publish — GitHub Actions (required here, because of submodules)
+A workflow at [`.github/workflows/pages.yml`](.github/workflows/pages.yml) deploys the
+static root and **skips submodules**, so the multi-GB firmware trees are never fetched.
+
 ```bash
 git add -A
 git commit -m "Interactive Flipper fork atlas"
-git push -u origin main
+git push -u origin master
 ```
-Then on GitHub: **Settings → Pages → Source: Deploy from a branch → `main` → `/ (root)`**.
+Then on GitHub: **Settings → Pages → Build and deployment → Source → "GitHub Actions"**.
+The workflow runs on every push to `master` (and via "Run workflow"); watch the
+**Actions** tab for the green *Deploy site to GitHub Pages* run.
 
 Live at `https://<you>.github.io/<repo>/`:
 - `…/` → loads the explorer (root `index.html`)
 - deep links work, e.g. `…/#/f/rc-kq-dec`, `…/#/fw/M`, `…/#/doc/SECURITY.md`
 
-> `.nojekyll` is present so Pages serves every file verbatim (no Jekyll processing).
+> ⚠️ **Do NOT use the classic "Deploy from a branch" source for this repo.** That
+> builder checks the repo out **with submodules**, tries to pull RogueMaster +
+> Momentum (multi-GB), and blows past the Pages **1 GB site / ~10-min build** limits
+> → the build fails → **404**. The Actions workflow avoids this with
+> `submodules: false`, and prunes `.git` / `.github` / `.claude` / empty `src/` from
+> the artifact so only the site ships.
 
-### Submodules + Pages
-Classic Pages serves the branch contents as-is; it does **not** fetch submodules, so
-`src/` simply isn't part of the site (which is what we want — no firmware in the
-published output). If you switch to the **GitHub Actions** Pages builder, set
-`submodules: false` on the checkout step to keep it fast.
+### The workflow, in brief
+```yaml
+- uses: actions/checkout@v4
+  with: { submodules: false }     # ← the key line: don't fetch the firmware trees
+- run: rm -rf .git .github .claude src
+- uses: actions/upload-pages-artifact@v3
+  with: { path: '.' }
+- uses: actions/deploy-pages@v4
+```
 
 ## Cloning this repo elsewhere
 ```bash

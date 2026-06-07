@@ -513,7 +513,7 @@
                 "R": "yes",
                 "M": "yes"
               },
-              "prov": "U-origin; `keeloq_common.c` is **md5-identical** across U/R/M (`c87b1211…`). The file grew 127→236 lines; `learning_pujol` added in U `63d49b6e4` (MX, 2026-04-21).",
+              "prov": "U-origin; `keeloq_common.c` is **md5-identical** across U/R/M (`c87b1211…`). The file grew 127→236 lines; `learning_pujol` added in U `63d49b6e4` (MX, 2026-04-21). Each `type` selects a derivation that turns a 64-bit manufacturer key + serial (+seed) into the per-remote device key. **Full chain + GitHub permalinks in CRYPTO-CHAIN.md.**",
               "evi": [
                 [
                   "added algos",
@@ -522,6 +522,10 @@
                 [
                   "fingerprint",
                   "md5 `c87b1211…` identical U=R=M"
+                ],
+                [
+                  "chain doc",
+                  "CRYPTO-CHAIN.md — hardware key → enclave → keystore → learning algo"
                 ]
               ]
             },
@@ -541,7 +545,7 @@
                 "R": "116",
                 "M": "116"
               },
-              "prov": "Forks ship a larger keystore — **62 → 116 records** (U=R=M byte-identical, `c4d8342f…`). Crucially the file is **AES-encrypted at rest** (`Encryption: 1`); the key lives in the device secure enclave, **not** the repo. No plaintext keys are exposed; the `*_user.example` holds only `AABBCCDDEEFFAABB` placeholders.",
+              "prov": "Forks ship a larger keystore — **62 → 116 records** (U=R=M byte-identical, `c4d8342f…`). The file is **AES-encrypted at rest** (`Encryption: 1`). The AES key is **slot 1** of the STM32WB55 **secure enclave** (CKS, managed by FUS on the M0+ radio core) — **factory-provisioned**, never in the repo, and **not software-readable** (no key read-back command). Firmware loads it into the `AES1` hardware and decrypts on-device (`subghz_keystore.c:119/145`); the IV comes from the file header. So the repo exposes **no plaintext keys**; `*_user.example` holds only `AABBCCDDEEFFAABB` placeholders. Full mechanism + on-device-oracle caveat in SECURITY.md → 'Secure enclave (CKS)'.",
               "evi": [
                 [
                   "count",
@@ -552,8 +556,16 @@
                   "AES-encrypted (`Encryption: 1` + IV)"
                 ],
                 [
-                  "plaintext?",
-                  "NO — key in enclave, not in repo"
+                  "enclave slot",
+                  "`subghz_keystore.c:20` → SLOT 1 (factory key)"
+                ],
+                [
+                  "opaque load",
+                  "`furi_hal_crypto.c:258` → `SHCI_C2_FUS_LoadUsrKey` (into AES1, key never exposed)"
+                ],
+                [
+                  "key read-back",
+                  "none — FUS is store/load/unload/lock only"
                 ]
               ]
             },
@@ -1482,7 +1494,17 @@
                 "M": "encrypted"
               },
               "kind": "security",
-              "prov": "Forks ship a larger keystore (62→116 records) but it is **AES-encrypted**; the key is in the device enclave, not the repo. No plaintext keys leaked. See Keeloq keystore feature."
+              "prov": "Forks ship a larger keystore (62→116 records) but it is **AES-encrypted**; the AES key is **slot 1** of the STM32WB55 secure enclave (CKS, factory-provisioned, not software-readable) — not in the repo. No plaintext keys leaked. The full cryptographic chain (hardware key → enclave → keystore decrypt → per-brand learning algos like Jarolift), with GitHub permalinks, is documented in **CRYPTO-CHAIN.md**; enclave threat-model + on-device-oracle caveat in **SECURITY.md → Secure enclave (CKS)**. Related nodes: `rc-kq-keys`, `rc-kq-learn`.",
+              "evi": [
+                [
+                  "chain doc",
+                  "CRYPTO-CHAIN.md — hardware key → enclave → keystore → Keeloq learning"
+                ],
+                [
+                  "enclave",
+                  "slot 1, `furi_hal_crypto.c:258` (FUS LoadUsrKey); decrypt `subghz_keystore.c:151`"
+                ]
+              ]
             },
             {
               "id": "se-apikey",

@@ -244,6 +244,43 @@ main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2
 .hide{display:none!important}
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}aside{width:320px}}
 
+/* ===== Mobile: master-detail (list ↔ detail), responsive toolbar ===== */
+.mback{display:none;position:fixed;left:12px;bottom:12px;z-index:200;align-items:center;gap:7px;
+  background:var(--O);color:#06121a;border:none;border-radius:22px;padding:11px 18px;cursor:pointer;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  box-shadow:0 10px 28px -8px #000,0 0 0 1px rgba(0,0,0,.3)}
+@media(max-width:760px){
+  /* explorer: show list OR detail, not both */
+  aside{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--line)}
+  main{min-width:0}
+  body.detail-open .split aside{display:none}
+  body:not(.detail-open) .split main{display:none}
+  /* documents: same master-detail */
+  .docidx{width:100%;min-width:0;border-right:none}
+  body.detail-open #docview .docidx{display:none}
+  body:not(.detail-open) #docview .docmain{display:none}
+  /* floating back button */
+  body.detail-open .mback{display:inline-flex}
+  /* toolbar wraps; search drops to its own line */
+  .tabbar{flex-wrap:wrap;gap:7px;padding:8px 12px}
+  .tabbar .search{order:3;flex-basis:100%;min-width:0;max-width:none;margin-left:0}
+  header{gap:10px;padding:10px 12px}
+  .brand h1{font-size:13px;letter-spacing:.18em}
+  .glyphkey{display:none}
+  .legend{gap:10px}
+  /* detail spacing + grids collapse */
+  .detail{padding:16px 14px 96px}
+  .d-title{font-size:23px}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .fkstats{grid-template-columns:repeat(2,1fr)}
+  .relrow{grid-template-columns:1fr;gap:3px;padding:9px 0}
+  .relverb{padding-top:0}
+  .fpanel{left:8px;right:8px;width:auto}
+  .md{padding:16px 13px 96px}
+  .md table{font-size:11.5px}
+}
+@media(max-width:420px){ .cards{grid-template-columns:1fr} .fkstats{grid-template-columns:1fr} }
+
 /* ===== Unified top toolbar (tabs + search + filters) ===== */
 .tabbar{position:relative;display:flex;align-items:center;gap:9px;padding:9px 22px;border-bottom:1px solid var(--line);background:rgba(8,11,16,.5);z-index:18}
 .tab{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);
@@ -365,6 +402,7 @@ body:not(.docs) #docview{display:none}
     <aside class="docidx"><div id="docidx"></div></aside>
     <main class="docmain" id="docmain"></main>
   </div>
+  <button id="mback" class="mback">‹ List</button>
 </div>
 
 <script src="data/features.js"></script>
@@ -392,7 +430,7 @@ function applyHash(){
    else if(raw.startsWith('fw/')){ setMode('explorer'); showFork(decodeURIComponent(raw.slice(3))); }
    else if(raw.startsWith('doc/')){ openDoc(decodeURIComponent(raw.slice(4))); }
    else if(raw==='docs'){ setMode('docs'); if(!curDoc) openDoc('REPORT.md'); }
-   else { setMode('explorer'); }
+   else { setMode('explorer'); document.body.classList.remove('detail-open'); }
  } finally{ routing=false; }
 }
 /* graph helpers (structural relations) */
@@ -539,7 +577,7 @@ function renderTree(){
 /* find item */
 function findItem(id){for(const c of DATA)for(const g of c.groups)for(const it of g.items)if(it.id===id)return {it,cat:c.cat,grp:g.name};return null;}
 let current=null;
-function select(id){const f=findItem(id);if(!f)return;current=f.it;current._cat=f.cat;current._grp=f.grp;renderTree();renderDetail(current);go('#/f/'+id);}
+function select(id){const f=findItem(id);if(!f)return;current=f.it;current._cat=f.cat;current._grp=f.grp;renderTree();renderDetail(current);go('#/f/'+id);document.body.classList.add('detail-open');}
 
 function mdi(s){return (s||"").replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');}
 
@@ -616,6 +654,8 @@ const CORE=[
  ["REPORT.md","Executive Report","RPT"],
  ["PROVENANCE.md","Provenance & Lineage","PRV"],
  ["SECURITY.md","Security Findings","SEC"],
+ ["CRYPTO-CHAIN.md","Keeloq crypto chain","CRY"],
+ ["HARDWARE.md","Hardware ↔ firmware map","HW"],
  ["FEATURE-TREE.md","Feature Tree (matrix)","FT"],
  ["STRATEGY.md","Strategy & method","STR"],
  ["FINDINGS.md","Lab notebook","LAB"],
@@ -686,7 +726,7 @@ function md2html(src){
 }
 
 async function openDoc(path){
- curDoc=path;setMode("docs");go('#/doc/'+encodeURIComponent(path));
+ curDoc=path;setMode("docs");go('#/doc/'+encodeURIComponent(path));document.body.classList.add('detail-open');
  $("#docidx").querySelectorAll(".ditem").forEach(n=>n.classList.toggle("on",n.dataset.path===path));
  const dm=$("#docmain");
  dm.innerHTML='<div class="md"><p class="loading">loading '+path+' …</p></div>';
@@ -709,15 +749,17 @@ function setMode(m){
 }
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
  const m=t.dataset.mode;setMode(m);
- if(m==="docs"){ if(curDoc) go('#/doc/'+encodeURIComponent(curDoc)); else openDoc("REPORT.md"); }
- else { current ? go('#/f/'+current.id) : go('#'); }
+ if(m==="docs"){ if(curDoc){ go('#/doc/'+encodeURIComponent(curDoc)); document.body.classList.remove('detail-open'); } else openDoc("REPORT.md"); }
+ else { current ? (go('#/f/'+current.id),document.body.classList.add('detail-open')) : (go('#'),document.body.classList.remove('detail-open')); }
 });
+/* mobile master-detail: back to the list */
+$("#mback").onclick=()=>document.body.classList.remove('detail-open');
 
 /* ---- firmware overview (click a fork in the legend) ---- */
 function showFork(k){
  const f=FORKS.find(x=>x.k===k);if(!f)return;
  current=null;document.querySelectorAll('.row.sel').forEach(r=>r.classList.remove('sel'));
- setMode('explorer');go('#/fw/'+k);
+ setMode('explorer');go('#/fw/'+k);document.body.classList.add('detail-open');
  const isPresent=v=>{const n=norm(v);if(n==='no')return false;if(n==='yes'||n==='partial')return true;return !/^(removed|none|0|absent)$/i.test(v);};
  const nodes=FEATURES.nodes||[];
  const present=nodes.filter(n=>isPresent(n.s[k]));

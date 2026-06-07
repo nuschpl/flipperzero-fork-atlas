@@ -21,6 +21,8 @@ primitives (modulations, encodings, ciphers, RF layers) and external apps (FAPs)
 | `REPORT.md` | executive synthesis |
 | `PROVENANCE.md` | lineage graph + who-copied-what ledger |
 | `SECURITY.md` | security/abuse audit (verdicts + cleared items) |
+| `CRYPTO-CHAIN.md` | Keeloq crypto chain: hardware key → enclave → keystore → learning algos (Mermaid + GitHub permalinks) |
+| `HARDWARE.md` | hardware ↔ firmware map (tech-specs chips → analysis) |
 | `FEATURE-TREE.md` | generated completeness matrix + relationship appendix |
 | `sections/` | per-dimension deep-dives (SubGhz, NFC, lineage, changelog, security) |
 | `STRATEGY.md`, `FINDINGS.md` | methodology + lab notebook |

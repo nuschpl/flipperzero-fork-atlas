@@ -131,3 +131,39 @@ These were flagged during triage and demoted after reading the actual code. Docu
 | F-MOM-SEC-01 | momentum | LOW | confirmed | Hardcoded developer AlphaVantage API key (flip_trader, community app) |
 
 No MEDIUM, HIGH, or CRITICAL findings in any firmware. No confirmed covert exfiltration, telemetry, C2, time-bomb, or implant.
+
+---
+
+## Secure enclave (CKS) — how the Keeloq keystore is protected
+
+The encrypted Sub-GHz keystore (`keeloq_mfcodes`, the Keeloq manufacturer keys) is
+decrypted on-device with a key held in the **STM32WB55's Customer Key Storage (CKS)** —
+the "secure enclave." This is **not** a separate secure-element chip; it is a feature of
+the MCU, managed by **FUS** (Firmware Upgrade Service) running on the **M0+ radio core
+(CPU2)**, while the application firmware you flash runs on the **M4 core (CPU1)**.
+
+### Keys held (provenance: code, not inference)
+| Slot | Origin | Encrypts | Code |
+|---|---|---|---|
+| 1 | factory | Sub-GHz keystore = Keeloq manufacturer keys (`keeloq_mfcodes`) | `lib/subghz/subghz_keystore.c:20`, load `:119`, decrypt `:145` |
+| 2 | factory | U2F **stock** attestation private key (`cert_key.u2f`) | `applications/main/u2f/u2f_data.c:16,19` |
+| unique (≥11, per-device, random at runtime) | runtime | U2F **user** key + any user secret via `crypto` CLI | `u2f_data.c:17,20`; `applications/services/crypto/crypto_cli.c` |
+| 3–10 | factory | present + self-tested, **unused** by open code (reserved) | `furi_hal_crypto_enclave_verify`, `furi_hal_crypto.c:13` (`ENCLAVE_FACTORY_KEY_SLOTS 10`) |
+
+### Interface (`…/ble_thread/shci/shci.h`, used by `targets/f7/furi_hal/furi_hal_crypto.c`)
+- `SHCI_C2_FUS_StoreUsrKey(param, &index)` — write a key, returns its slot (`crypto.c:157`)
+- `SHCI_C2_FUS_LoadUsrKey(index)` — load key **straight into the `AES1` hardware key registers** (`crypto.c:258`); CPU1 sets IV + data but the key bytes are never visible to software
+- `SHCI_C2_FUS_UnloadUsrKey(index)` / `SHCI_C2_FUS_LockUsrKey(index)` — clear / lock
+- **There is NO read-back command** (no `ReadUsrKey`/`ExportKey`) — the store is write/use/lock only.
+
+### Persistence & destruction
+- **Survives application reflashing** — installing any custom firmware replaces the **M4 app**, not the **M0+ FUS / CKS region**. (This is why every fork decrypts the keystore with the same slot-1 key.)
+- **Destroyed by** (per ST FUS/RDP behavior — AN5185 / RM0434, not in this repo): an **RDP level regression** (Level 1→0 triggers a **mass erase** of user flash + secure storage), a **full chip mass-erase** (e.g. STM32CubeProgrammer unbrick), or a **FUS / wireless-stack wipe** (`fwdelete`-class operations). Factory keys are **unrecoverable** afterward — their plaintext is Flipper's secret and cannot be re-provisioned, so that device permanently loses the ability to decrypt the official keystore.
+
+### Threat-model caveat: enclave ≠ tamper-proof against your own firmware
+The CKS protects the **raw key from extraction** and the **content at rest on SD** — but it does **not** stop firmware *you flash* from using the enclave as a **decryption oracle**:
+a custom M4 app can call `furi_hal_crypto_enclave_load_key(1, iv)` + `furi_hal_crypto_decrypt(...)` (exactly what `subghz_keystore.c` already does) to obtain the **plaintext** manufacturer keys and dump them to SD/USB. The in-code comment `subghz_keystore.c:84` ("Please do not share decrypted manufacture keys") acknowledges this.
+- **Can custom FW back up the protected *content*?** Yes — the plaintext (decrypted keys, decrypted U2F private key) is recoverable on a provisioned device, because the M4 may invoke the AES oracle.
+- **Can it back up the *key* itself (to restore after a wipe)?** No — there is no read-back, and the `AES1` key registers are not software-readable when loaded via FUS. You can preserve the *plaintext*, but you cannot restore the *original slot-1 key* after a CKS wipe (you could only re-encrypt the plaintext under a **new** key you provision via `StoreUsrKey`, or run a fork that reads a plaintext keystore).
+
+**Bottom line:** "no plaintext keys in the repo" is accurate and unchanged across all four forks; but it does **not** mean the keys are unextractable from a *running, provisioned* device — that depends entirely on trusting the firmware you flash.
