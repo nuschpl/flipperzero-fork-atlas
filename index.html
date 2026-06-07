@@ -197,6 +197,17 @@ main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2
   border:1px solid var(--line2);border-left:3px solid var(--c);border-radius:6px;padding:5px 11px;background:var(--panel);transition:.14s}
 .relchip:hover{border-color:var(--c);transform:translateX(2px);background:color-mix(in srgb,var(--c) 9%,var(--panel))}
 .relchip i{font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+/* ego-graph (neighborhood) */
+.ego{width:100%;height:auto;max-height:440px;display:block;margin:2px 0 4px;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.02),transparent 70%);border:1px solid var(--line);border-radius:var(--r)}
+.ego .nedge{stroke:var(--line2);stroke-width:1.2;fill:none;opacity:.7}
+.ego .nrel{font-family:var(--mono);font-size:8px;fill:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+.ego .nlabel{font-family:var(--mono);font-size:10px;fill:var(--mut)}
+.ego .nnode{cursor:pointer}
+.ego .nnode:hover .nlabel{fill:#fff}
+.ego .nnode:hover circle{stroke:var(--c);filter:drop-shadow(0 0 6px var(--c))}
+.ego .center rect{fill:var(--panel2)}
+.ego .center text{font-family:var(--cond);font-weight:700;font-size:12px}
+.egonote{font-family:var(--mono);font-size:10px;color:var(--faint);text-align:center;margin-top:4px}
 
 .verdict{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--r);margin-bottom:24px;
   border:1px solid var(--line2);background:var(--panel);font-size:13.5px}
@@ -452,6 +463,44 @@ function relationsHTML(id){
    return `<div class="relrow"><span class="relverb">${g.dir==='o'?'›':'‹'} ${verb}</span><span class="relchips">${g.ids.map(chip).join('')}</span></div>`;}).join('');
  return `<div class="sect"><h3 class="sect-h">Relations · structural graph</h3><div class="rels">${rows}</div></div>`;
 }
+/* ego-graph: selected node centered, typed neighbors as clickable dots + directional edges */
+function egoGraphHTML(id){
+ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const seen={}; const nb=[];
+ EDGES.forEach(e=>{ if(e.from===id&&!seen[e.to]){seen[e.to]=1;nb.push({nid:e.to,dir:'o',rel:e.rel});}
+                    if(e.to===id&&!seen[e.from]){seen[e.from]=1;nb.push({nid:e.from,dir:'i',rel:e.rel});} });
+ if(!nb.length) return '';
+ nb.sort((a,b)=>a.rel.localeCompare(b.rel) || String((NBY[a.nid]||{}).label).localeCompare(String((NBY[b.nid]||{}).label)));
+ const CAP=22; let extra=0; if(nb.length>CAP){extra=nb.length-CAP; nb.length=CAP;}
+ const W=600,H=Math.max(300,160+nb.length*9), cx=W/2, cy=H/2, n=nb.length;
+ const R=Math.min(Math.min(cx,cy)-96, 78+n*4);
+ const me=NBY[id]||{label:id,type:''}; const cc=tcolor(id);
+ const showRel=n<=12;
+ let g='';
+ nb.forEach((x,i)=>{
+   const ang=(-90 + i*360/n)*Math.PI/180, X=cx+R*Math.cos(ang), Y=cy+R*Math.sin(ang);
+   const nd=NBY[x.nid]||{label:x.nid,type:''}, col=tcolor(x.nid);
+   const c=Math.cos(ang); const anchor=c>0.25?'start':c<-0.25?'end':'middle';
+   const lx=X+(c>0.25?11:c<-0.25?-11:0), ly=Y+(Math.sin(ang)>0?12:-2);
+   const lbl=esc(nd.label.length>20?nd.label.slice(0,19)+'…':nd.label);
+   const rt=RELT[x.rel]||{label:x.rel,inv:x.rel}; const verb=x.dir==='o'?rt.label:rt.inv;
+   // edge: arrow points toward the dependency target
+   const path=x.dir==='o'?`M ${cx} ${cy} L ${X} ${Y}`:`M ${X} ${Y} L ${cx} ${cy}`;
+   g+=`<path class="nedge" d="${path}" marker-end="url(#ah)"/>`;
+   if(showRel){const mx=(cx+X)/2, my=(cy+Y)/2; g+=`<text class="nrel" x="${mx}" y="${my-2}" text-anchor="middle">${esc(verb)}</text>`;}
+   g+=`<g class="nnode" data-go="${x.nid}" style="--c:${col}"><title>${esc(verb)} → ${esc(nd.label)} (${esc(tlabel(nd.type))})</title>`+
+      `<circle cx="${X}" cy="${Y}" r="6.5" fill="${col}" stroke="#0a0d13" stroke-width="1.5"/>`+
+      `<text class="nlabel" x="${lx}" y="${ly}" text-anchor="${anchor}">${lbl}</text></g>`;
+ });
+ const cw=Math.min(220, me.label.length*8+24);
+ g+=`<g class="center"><rect x="${cx-cw/2}" y="${cy-15}" width="${cw}" height="30" rx="8" stroke="${cc}" stroke-width="1.5"/>`+
+    `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="${cc}">${esc(me.label.length>26?me.label.slice(0,25)+'…':me.label)}</text></g>`;
+ const note=extra?`<div class="egonote">+${extra} more — see the Relations list below</div>`:'';
+ return `<div class="sect"><h3 class="sect-h">Neighborhood graph</h3>`+
+   `<svg class="ego" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`+
+   `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="var(--faint)"/></marker></defs>`+
+   g+`</svg>${note}</div>`;
+}
 const norm=v=>v==='yes'||v==='no'||v==='partial'?v:'txt';
 const present=v=>{const n=norm(v);if(n==='no')return false;if(n==='partial')return 'p';if(n==='yes')return true;
   // text values: negative-ish?
@@ -637,12 +686,13 @@ function renderDetail(it){
    <div class="d-tags">${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div>
    <div class="verdict ${diverging?'diff':'same'}"><span class="ico">${diverging?'≠':'='}</span><span>${verdictTxt}</span></div>
    <div class="cards">${cards}</div>
+   ${egoGraphHTML(it.id)}
    ${relationsHTML(it.id)}
    <div class="sect"><h3 class="sect-h">Provenance &amp; analysis</h3><div class="prose">${mdi(it.prov||'')}</div></div>
    ${evi}
    <div class="foot">Sources · <b>FEATURE-TREE.md</b> · <b>PROVENANCE.md</b> · <b>sections/*.md</b> &nbsp;|&nbsp; static analysis only · code is ground truth · commit hashes &amp; file:line verifiable in-repo</div>
  </div>`;
- main.querySelectorAll('.relchip[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
+ main.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
  main.scrollTop=0;
 }
 
@@ -797,7 +847,7 @@ function showFork(k){
    <div class="sect"><h3 class="sect-h">Exclusive to ${f.name} <span class="muted">(${uniq.length})</span></h3><div class="relchips">${uniqChips}</div></div>
    <div class="foot">Click any chip to open that node · firmware facts from analysis recon · ${f.repo||''}</div>
  </div>`;
- main.querySelectorAll('.relchip[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
+ main.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>select(c.dataset.go));
  main.scrollTop=0;
 }
 
