@@ -33,12 +33,14 @@
       { "id": "runs-on", "label": "runs on", "inv": "carries" },
       { "id": "attacks", "label": "attacks", "inv": "attacked by" },
       { "id": "provides", "label": "provides", "inv": "provided by" },
-      { "id": "derives-key-for", "label": "derives device key for", "inv": "device key derived by" }
+      { "id": "derives-key-for", "label": "derives device key for", "inv": "device key derived by" },
+      { "id": "supports", "label": "supports", "inv": "supported by" }
     ]
   },
   "typeHints": {
     "nf-base": "product", "nf-emv": "product", "nf-ntag4": "product", "nf-t4t": "product",
-    "rc-kq-dec": "protocol", "rc-jarolift": "protocol", "rc-bisecur": "protocol", "rc-secplus": "protocol", "rc-rxtx": "protocol", "sg-removed": "protocol",
+    "rc-kq-dec": "protocol", "rc-jarolift": "protocol", "rc-bisecur": "protocol", "rc-secplus": "protocol", "rc-rxtx": "protocol",
+    "sg-aes": "capability", "sg-removed": "capability",
     "at-mfkey32": "attack", "at-mfkeyapp": "attack", "at-mfkeyalg": "attack", "at-dict": "attack", "at-magic": "attack",
     "ap-nfcmagic": "fap", "ap-mfkey": "fap", "ap-nfcsuite": "fap", "ap-protopirate": "fap", "ap-ulc": "fap", "ap-sensors": "fap"
   },
@@ -179,6 +181,45 @@
     { "from": "ap-sensors", "to": "sg-weather", "rel": "provides" },
     { "from": "ap-sensors", "to": "sg-tpms", "rel": "provides" },
     { "from": "ap-sensors", "to": "sg-pocsag", "rel": "provides" },
-    { "from": "ap-protopirate", "to": "rc-kq-dec", "rel": "provides" }
+    { "from": "ap-protopirate", "to": "rc-kq-dec", "rel": "provides" },
+
+    { "from": "rad-cc1101", "to": "mod-ook", "rel": "supports" },
+    { "from": "rad-cc1101", "to": "mod-2fsk", "rel": "supports" },
+    { "from": "rad-cc1101", "to": "mod-gfsk", "rel": "supports" },
+    { "from": "rad-cc1101", "to": "mod-msk", "rel": "supports" },
+    { "from": "rad-st25r", "to": "mod-load", "rel": "supports" },
+
+    { "from": "sg-allstar", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-beninca", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-ditec", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-elplast", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-honeywell", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-jarolift", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-keyfinder", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-nordice", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-treadmill", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-bisecur", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-telcoma", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-x10", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-tpms", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "sg-tx8300", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "rc-jarolift", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "rc-bisecur", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "rc-rxtx", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "rc-secplus", "to": "rad-cc1101", "rel": "runs-on" },
+
+    { "from": "sg-aes", "to": "cph-aes", "rel": "provides" },
+
+    { "from": "pa-shared14", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-smartrider", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-ventra", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-andalucia", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-trea", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-hotels", "to": "lay-14443a", "rel": "runs-on" },
+    { "from": "pa-saflok", "to": "lay-14443a", "rel": "runs-on" },
+
+    { "from": "ap-ulc", "to": "nf-ulc", "rel": "provides" },
+    { "from": "fap-sub_analyzer", "to": "rad-cc1101", "rel": "runs-on" },
+    { "from": "ap-nfcsuite", "to": "lay-14443a", "rel": "runs-on" }
   ]
 }

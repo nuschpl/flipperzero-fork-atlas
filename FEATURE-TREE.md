@@ -18,7 +18,7 @@
 | Feature | Type | Implements | O | U | R | M | Provenance |
 |---|---|---|:--:|:--:|:--:|:--:|---|
 | Official base protocols `52 shared core` | protocol | The 52 upstream SubGhz protocol decoders/encoders (CAME, Nice, Princeton, Holtek…) inherited unchanged by every fork. | ✓ | ✓ | ✓ | ✓ | Upstream OFW. Byte-identical core shared by all four. |
-| aes_common `helper` | protocol | Software AES-128 helper that AES-based remotes (e.g. Beninca ARC) call for decryption. | ✗ | ✓ | ✗ | ✓ | U-origin (`db2dc8f64`, landed with beninca_arc). **R dropped it** — RogueMaster switched Beninca to the chip's hardware AES, so the SW helper is absent there. |
+| aes_common `helper` | capability | Software AES-128 helper that AES-based remotes (e.g. Beninca ARC) call for decryption. | ✗ | ✓ | ✗ | ✓ | U-origin (`db2dc8f64`, landed with beninca_arc). **R dropped it** — RogueMaster switched Beninca to the chip's hardware AES, so the SW helper is absent there. |
 | allstar_firefly | protocol | AllStar Firefly garage / gate remote, decode + encode capable. | ✗ | ✓ | ✓ | ✓ | U-origin (`1f2022b87`, jlaughter). Propagated U→M by real merge (shared SHAs); U→R by squashed bulk import. |
 | beninca_arc | protocol | Beninca ARC AES rolling-code gate remote; implementation splits 3-ways across forks. | ✗ | ✓ | ✓ | ✓ | U-origin (`db2dc8f64`, MX). **3-way md5 divergence**: U & M use software `aes_common`; R re-implemented it on hardware AES via `furi_hal_crypto` (`a2cf8be10`). |
 | ditec_gol4 | protocol | DITEC GOL4 gate / barrier remote protocol. | ✗ | ✓ | ✓ | ✓ | U-origin (`556a2dd3f`, MX). |
@@ -35,7 +35,7 @@
 | TPMS pack `schrader_gg4, tpms_generic` | protocol | Car tire-pressure sensor decoders; expose stable per-vehicle IDs (tracking vector). | ✗ | ✗ | app | ✓ | M-only core-lib (rtl_433 port, HTotoo). Passive RX. RogueMaster bundles the same as an external app. |
 | POCSAG / pager pack `pocsag, pcsg_generic` | protocol | POCSAG pager decoder that reconstructs pager message text content (intercept). | ✗ | ✗ | app | ✓ | M-only core-lib (Max Lapan `4c092c8e6`). RogueMaster bundles it as an external app. |
 | tx_8300 | protocol | TX-8300 thermo / hygro weather sensor decoder. | ✗ | ✗ | ✗ | ✓ | Momentum-only (core-lib). |
-| star_line / kia / scher_khan `REMOVED` | protocol | Russian car-alarm decoders — present upstream, deleted from all three forks. | ✓ | ✗ | ✗ | ✗ | **Deleted in all forks** via Unleashed `50b5ee103` "bipki removal" (MX, 2026-01-12) — "they are in other app". Were decode-only. Relocated to an external app (Momentum: ProtoPirate). A rare case of forks *removing* upstream capability. |
+| star_line / kia / scher_khan `REMOVED` | capability | Russian car-alarm decoders — present upstream, deleted from all three forks. | ✓ | ✗ | ✗ | ✗ | **Deleted in all forks** via Unleashed `50b5ee103` "bipki removal" (MX, 2026-01-12) — "they are in other app". Were decode-only. Relocated to an external app (Momentum: ProtoPirate). A rare case of forks *removing* upstream capability. |
 
 ### 1.2 Rolling-code & security-sensitive remotes
 
@@ -227,7 +227,7 @@
 
 ## Relationships (structural graph)
 
-How capabilities decompose into shared primitives. 77 edges.
+How capabilities decompose into shared primitives. 111 edges.
 
 
 **modulated with** (`uses-modulation`)
@@ -300,6 +300,33 @@ How capabilities decompose into shared primitives. 77 edges.
 - iso15693_nfc_writer → ISO15693
 - esubghz_chat → CC1101 (sub-GHz)
 - nfc_fuzzer → ISO14443-A
+- allstar_firefly → CC1101 (sub-GHz)
+- beninca_arc → CC1101 (sub-GHz)
+- ditec_gol4 → CC1101 (sub-GHz)
+- elplast → CC1101 (sub-GHz)
+- honeywell → CC1101 (sub-GHz)
+- jarolift → CC1101 (sub-GHz)
+- keyfinder → CC1101 (sub-GHz)
+- nord_ice → CC1101 (sub-GHz)
+- treadmill37 → CC1101 (sub-GHz)
+- hormann_bisecur → CC1101 (sub-GHz)
+- telcoma_edge → CC1101 (sub-GHz)
+- x10 → CC1101 (sub-GHz)
+- TPMS pack → CC1101 (sub-GHz)
+- tx_8300 → CC1101 (sub-GHz)
+- Jarolift clone+TX → CC1101 (sub-GHz)
+- Hörmann BiSecur clone+TX → CC1101 (sub-GHz)
+- Somfy / Nice / FAAC / Alutech: RX → TX → CC1101 (sub-GHz)
+- Security+ v1/v2 TX → CC1101 (sub-GHz)
+- Shared +14 transit/payment/lock parsers → ISO14443-A
+- smartrider.c variant → ISO14443-A
+- ventra.c variant → ISO14443-A
+- andalucia → ISO14443-A
+- trea → ISO14443-A
+- hotels → ISO14443-A
+- Hotel-lock parsing (saflok) → ISO14443-A
+- sub_analyzer → CC1101 (sub-GHz)
+- NFC Fuzzer / Sniffer / Relay / Dict Mgr → ISO14443-A
 
 **attacks** (`attacks`)
 
@@ -326,10 +353,20 @@ How capabilities decompose into shared primitives. 77 edges.
 - weather_station / tpms / pocsag apps → TPMS pack
 - weather_station / tpms / pocsag apps → POCSAG / pager pack
 - ProtoPirate → Keeloq decode
+- aes_common → AES-128
+- ULC apps (brute / fkey / relay) → MfUltralight-C 3DES key-page write
 
 **derives device key for** (`derives-key-for`)
 
 - Keeloq learning / derivation algos → Keeloq NLF
 
+**supports** (`supports`)
+
+- CC1101 (sub-GHz) → OOK / ASK
+- CC1101 (sub-GHz) → 2-FSK
+- CC1101 (sub-GHz) → GFSK
+- CC1101 (sub-GHz) → MSK
+- ST25R3916 (13.56) → Load modulation (13.56)
+
 ---
-_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 77 relations. See `PROVENANCE.md` and `index.html`._
+_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 111 relations. See `PROVENANCE.md` and `index.html`._
