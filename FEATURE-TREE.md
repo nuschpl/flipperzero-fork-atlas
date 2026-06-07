@@ -147,7 +147,7 @@
 
 | Feature | Type | Implements | O | U | R | M | Provenance |
 |---|---|---|:--:|:--:|:--:|:--:|---|
-| Keeloq NLF | cipher | 32-bit non-linear-feedback block cipher, 64-bit key — hopping-code remotes. | ✓ | ✓ | ✓ | ✓ | lib/subghz/protocols/keeloq_common.c — `KEELOQ_NLF`, encrypt/decrypt. |
+| Keeloq NLF | cipher | 32-bit non-linear-feedback block cipher, 64-bit key — hopping-code remotes. | ✓ | ✓ | ✓ | ✓ | lib/subghz/protocols/keeloq_common.c — `KEELOQ_NLF`, encrypt/decrypt. **The shared cryptographic root of the whole Keeloq family** (decode, emulate/TX, the learning algos, Jarolift all funnel through it). Full layered chain (radio → enclave → keystore → learning → this cipher) in **CRYPTO-CHAIN.md**. |
 | Crypto1 | cipher | 48-bit stream cipher of MIFARE Classic — broken (mfkey/nested). | ✓ | ✓ | ✓ | ✓ | lib/nfc/helpers/crypto1.c. |
 | AES-128 | cipher | Block cipher behind Hörmann BiSecur and Beninca ARC remotes; DESFire. | ✓ | ✓ | ✓ | ✓ | furi_hal_crypto (HW AES) + software aes_common in U/M. |
 | 3DES / DES | cipher | Triple-DES for MIFARE Ultralight-C auth and DESFire/EMV. | ✓ | ✓ | ✓ | ✓ | mf_ultralight / mf_desfire crypto. |
@@ -227,7 +227,7 @@
 
 ## Relationships (structural graph)
 
-How capabilities decompose into shared primitives. 75 edges.
+How capabilities decompose into shared primitives. 77 edges.
 
 
 **modulated with** (`uses-modulation`)
@@ -276,6 +276,7 @@ How capabilities decompose into shared primitives. 75 edges.
 - Official base set → Crypto1
 - MfUltralight-C 3DES key-page write → 3DES / DES
 - emv → 3DES / DES
+- Keeloq emulate / clone / TX → Keeloq NLF
 
 **runs on** (`runs-on`)
 
@@ -305,11 +306,11 @@ How capabilities decompose into shared primitives. 75 edges.
 - Mfkey32 nonce capture → Crypto1
 - On-device mfkey app (in tree) → Crypto1
 - MIFARE Classic key dictionary → Crypto1
-- Keeloq learning / derivation algos → Keeloq NLF
 - mifare_fuzzer → Crypto1
 
 **provides** (`provides`)
 
+- Keeloq manufacturer keystore → Keeloq NLF
 - nfc_magic → Magic-card writing (nfc_magic)
 - nfc_magic → Magic-card writing (nfc_magic)
 - mfkey → On-device mfkey app (in tree)
@@ -326,5 +327,9 @@ How capabilities decompose into shared primitives. 75 edges.
 - weather_station / tpms / pocsag apps → POCSAG / pager pack
 - ProtoPirate → Keeloq decode
 
+**derives device key for** (`derives-key-for`)
+
+- Keeloq learning / derivation algos → Keeloq NLF
+
 ---
-_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 75 relations. See `PROVENANCE.md` and `index.html`._
+_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 77 relations. See `PROVENANCE.md` and `index.html`._

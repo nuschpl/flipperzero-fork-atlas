@@ -32,7 +32,8 @@
       { "id": "secured-by", "label": "secured by", "inv": "secures" },
       { "id": "runs-on", "label": "runs on", "inv": "carries" },
       { "id": "attacks", "label": "attacks", "inv": "attacked by" },
-      { "id": "provides", "label": "provides", "inv": "provided by" }
+      { "id": "provides", "label": "provides", "inv": "provided by" },
+      { "id": "derives-key-for", "label": "derives device key for", "inv": "device key derived by" }
     ]
   },
   "typeHints": {
@@ -61,7 +62,7 @@
     { "id": "pre-fm476", "type": "preset", "domain": "Stack & primitives", "group": "CC1101 presets", "label": "FM476", "desc": "2-FSK preset, 4.76 kHz deviation — wider FSK links.", "tags": ["SubGhz", "preset"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "FuriHalSubGhzPreset2FSKDev476Async." },
     { "id": "pre-fm12k", "type": "preset", "domain": "Stack & primitives", "group": "CC1101 presets", "label": "FM12K (custom)", "desc": "Custom 12 kHz FSK deviation preset — Momentum-added.", "tags": ["SubGhz", "preset", "M-only"], "s": { "O": "no", "U": "no", "R": "partial", "M": "yes" }, "prov": "Momentum cc1101_configs.c:223; see to-fm12k." },
 
-    { "id": "cph-keeloq", "type": "cipher", "domain": "Stack & primitives", "group": "Ciphers & rolling-code", "label": "Keeloq NLF", "desc": "32-bit non-linear-feedback block cipher, 64-bit key — hopping-code remotes.", "tags": ["SubGhz", "keeloq", "cipher", "sensitive"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "lib/subghz/protocols/keeloq_common.c — `KEELOQ_NLF`, encrypt/decrypt.", "evi": [["cipher core", "`keeloq_common.c:16-30` (encrypt/decrypt + NLF)"]] },
+    { "id": "cph-keeloq", "type": "cipher", "domain": "Stack & primitives", "group": "Ciphers & rolling-code", "label": "Keeloq NLF", "desc": "32-bit non-linear-feedback block cipher, 64-bit key — hopping-code remotes.", "tags": ["SubGhz", "keeloq", "cipher", "sensitive"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "lib/subghz/protocols/keeloq_common.c — `KEELOQ_NLF`, encrypt/decrypt. **The shared cryptographic root of the whole Keeloq family** (decode, emulate/TX, the learning algos, Jarolift all funnel through it). Full layered chain (radio → enclave → keystore → learning → this cipher) in **CRYPTO-CHAIN.md**.", "evi": [["cipher core", "`keeloq_common.c:16-30` (encrypt/decrypt + NLF)"], ["full chain", "see CRYPTO-CHAIN.md"]] },
     { "id": "cph-crypto1", "type": "cipher", "domain": "Stack & primitives", "group": "Ciphers & rolling-code", "label": "Crypto1", "desc": "48-bit stream cipher of MIFARE Classic — broken (mfkey/nested).", "tags": ["NFC", "cipher", "attack"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "lib/nfc/helpers/crypto1.c.", "evi": [["cipher core", "`lib/nfc/helpers/crypto1.c`"]] },
     { "id": "cph-aes", "type": "cipher", "domain": "Stack & primitives", "group": "Ciphers & rolling-code", "label": "AES-128", "desc": "Block cipher behind Hörmann BiSecur and Beninca ARC remotes; DESFire.", "tags": ["SubGhz", "NFC", "cipher"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "furi_hal_crypto (HW AES) + software aes_common in U/M." },
     { "id": "cph-3des", "type": "cipher", "domain": "Stack & primitives", "group": "Ciphers & rolling-code", "label": "3DES / DES", "desc": "Triple-DES for MIFARE Ultralight-C auth and DESFire/EMV.", "tags": ["NFC", "cipher"], "s": { "O": "yes", "U": "yes", "R": "yes", "M": "yes" }, "prov": "mf_ultralight / mf_desfire crypto." },
@@ -155,7 +156,9 @@
     { "from": "at-mfkey32", "to": "cph-crypto1", "rel": "attacks" },
     { "from": "at-mfkeyapp", "to": "cph-crypto1", "rel": "attacks" },
     { "from": "at-dict", "to": "cph-crypto1", "rel": "attacks" },
-    { "from": "rc-kq-learn", "to": "cph-keeloq", "rel": "attacks" },
+    { "from": "rc-kq-learn", "to": "cph-keeloq", "rel": "derives-key-for" },
+    { "from": "rc-kq-tx", "to": "cph-keeloq", "rel": "secured-by" },
+    { "from": "rc-kq-keys", "to": "cph-keeloq", "rel": "provides" },
     { "from": "at-magic", "to": "lay-14443a", "rel": "runs-on" },
 
     { "from": "fap-nfc_magic", "to": "at-magic", "rel": "provides" },
