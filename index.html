@@ -472,17 +472,21 @@ function egoGraphHTML(id){
  if(!nb.length) return '';
  nb.sort((a,b)=>a.rel.localeCompare(b.rel) || String((NBY[a.nid]||{}).label).localeCompare(String((NBY[b.nid]||{}).label)));
  const CAP=22; let extra=0; if(nb.length>CAP){extra=nb.length-CAP; nb.length=CAP;}
- const W=600,H=Math.max(300,160+nb.length*9), cx=W/2, cy=H/2, n=nb.length;
- const R=Math.min(Math.min(cx,cy)-96, 78+n*4);
+ const n=nb.length, W=600;
+ const R=Math.max(96,Math.min(175,82+n*5));   // ring radius scales with count
+ const H=Math.round(2*(R+60)), cx=W/2, cy=H/2; // canvas leaves room for outward labels
  const me=NBY[id]||{label:id,type:''}; const cc=tcolor(id);
  const showRel=n<=12;
  let g='';
  nb.forEach((x,i)=>{
-   const ang=(-90 + i*360/n)*Math.PI/180, X=cx+R*Math.cos(ang), Y=cy+R*Math.sin(ang);
+   const ang=(-90 + i*360/n)*Math.PI/180, ux=Math.cos(ang), uy=Math.sin(ang);
+   const X=cx+R*ux, Y=cy+R*uy;
    const nd=NBY[x.nid]||{label:x.nid,type:''}, col=tcolor(x.nid);
-   const c=Math.cos(ang); const anchor=c>0.25?'start':c<-0.25?'end':'middle';
-   const lx=X+(c>0.25?11:c<-0.25?-11:0), ly=Y+(Math.sin(ang)>0?12:-2);
-   const lbl=esc(nd.label.length>20?nd.label.slice(0,19)+'…':nd.label);
+   // place label radially OUTWARD from the dot so it never overlaps the dot/edge
+   const anchor=ux>0.3?'start':ux<-0.3?'end':'middle';
+   const dy=uy>0.3?'0.95em':uy<-0.45?'-0.55em':'0.32em';
+   const lx=X+ux*16, ly=Y+uy*16;
+   const lbl=esc(nd.label.length>22?nd.label.slice(0,21)+'…':nd.label);
    const rt=RELT[x.rel]||{label:x.rel,inv:x.rel}; const verb=x.dir==='o'?rt.label:rt.inv;
    // edge: arrow points toward the dependency target
    const path=x.dir==='o'?`M ${cx} ${cy} L ${X} ${Y}`:`M ${X} ${Y} L ${cx} ${cy}`;
@@ -490,7 +494,7 @@ function egoGraphHTML(id){
    if(showRel){const mx=(cx+X)/2, my=(cy+Y)/2; g+=`<text class="nrel" x="${mx}" y="${my-2}" text-anchor="middle">${esc(verb)}</text>`;}
    g+=`<g class="nnode" data-go="${x.nid}" style="--c:${col}"><title>${esc(verb)} → ${esc(nd.label)} (${esc(tlabel(nd.type))})</title>`+
       `<circle cx="${X}" cy="${Y}" r="6.5" fill="${col}" stroke="#0a0d13" stroke-width="1.5"/>`+
-      `<text class="nlabel" x="${lx}" y="${ly}" text-anchor="${anchor}">${lbl}</text></g>`;
+      `<text class="nlabel" x="${lx}" y="${ly}" dy="${dy}" text-anchor="${anchor}">${lbl}</text></g>`;
  });
  const cw=Math.min(220, me.label.length*8+24);
  g+=`<g class="center"><rect x="${cx-cw/2}" y="${cy-15}" width="${cw}" height="30" rx="8" stroke="${cc}" stroke-width="1.5"/>`+
