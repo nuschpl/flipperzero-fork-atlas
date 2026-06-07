@@ -34,7 +34,8 @@
       { "id": "attacks", "label": "attacks", "inv": "attacked by" },
       { "id": "provides", "label": "provides", "inv": "provided by" },
       { "id": "derives-key-for", "label": "derives device key for", "inv": "device key derived by" },
-      { "id": "supports", "label": "supports", "inv": "supported by" }
+      { "id": "supports", "label": "supports", "inv": "supported by" },
+      { "id": "configures", "label": "configures", "inv": "configured by" }
     ]
   },
   "typeHints": {
@@ -220,6 +221,13 @@
 
     { "from": "ap-ulc", "to": "nf-ulc", "rel": "provides" },
     { "from": "fap-sub_analyzer", "to": "rad-cc1101", "rel": "runs-on" },
-    { "from": "ap-nfcsuite", "to": "lay-14443a", "rel": "runs-on" }
+    { "from": "ap-nfcsuite", "to": "lay-14443a", "rel": "runs-on" },
+
+    { "from": "tx-gate", "to": "rad-cc1101", "rel": "configures" },
+    { "from": "tx-regionsvc", "to": "rad-cc1101", "rel": "configures" },
+    { "from": "tx-unlock", "to": "rad-cc1101", "rel": "configures" },
+    { "from": "tx-ignore", "to": "rad-cc1101", "rel": "configures" },
+    { "from": "to-freq", "to": "rad-cc1101", "rel": "configures" },
+    { "from": "to-txpower", "to": "rad-cc1101", "rel": "configures" }
   ]
 }

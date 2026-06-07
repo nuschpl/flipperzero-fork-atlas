@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(HERE, 'data');
@@ -162,3 +163,8 @@ if (!html.includes('<script src="data/features.js"')) {
 if (patched) { fs.writeFileSync(HTML, html); console.log('• patched index.html'); }
 else console.log('• index.html already wired');
 console.log('done.');
+
+/* ---------- 8. consistency audit (fails the build on hard errors) ---------- */
+console.log('\n— running consistency audit (audit.mjs) —');
+const audit = spawnSync(process.execPath, [path.join(HERE, 'audit.mjs')], { stdio: 'inherit' });
+process.exit(audit.status ?? 0);

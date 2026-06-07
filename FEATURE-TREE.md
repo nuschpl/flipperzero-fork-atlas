@@ -227,7 +227,7 @@
 
 ## Relationships (structural graph)
 
-How capabilities decompose into shared primitives. 111 edges.
+How capabilities decompose into shared primitives. 117 edges.
 
 
 **modulated with** (`uses-modulation`)
@@ -368,5 +368,14 @@ How capabilities decompose into shared primitives. 111 edges.
 - CC1101 (sub-GHz) → MSK
 - ST25R3916 (13.56) → Load modulation (13.56)
 
+**configures** (`configures`)
+
+- Mandatory region TX gate → CC1101 (sub-GHz)
+- OTA region-provisioning service → CC1101 (sub-GHz)
+- Unlock asset (SD, default OFF) → CC1101 (sub-GHz)
+- RX protocol-filter bypass → CC1101 (sub-GHz)
+- Frequency analyzer hotkeys → CC1101 (sub-GHz)
+- TX power setting → CC1101 (sub-GHz)
+
 ---
-_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 111 relations. See `PROVENANCE.md` and `index.html`._
+_Built 2026-06-07 · 120 nodes (76 capabilities + 44 structural/FAP) · 117 relations. See `PROVENANCE.md` and `index.html`._
